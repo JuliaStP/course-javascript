@@ -107,7 +107,7 @@ function updateFilter(filterValue) {
 
   const fragment = document.createDocumentFragment();
 
-  for (const city in cities) {
+  for (const city of cities) {
     if (filterValue && isMatching(city.name, filterValue)) {
       const createdDiv = document.createElement('div');
       createdDiv.textContent = city.name;
@@ -117,6 +117,6 @@ function updateFilter(filterValue) {
   filterResult.append(fragment);
 }
 
-loadTowns();
+reloadTowns();
 
 export { loadTowns, isMatching };
