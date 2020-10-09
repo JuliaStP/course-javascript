@@ -1,41 +1,93 @@
-/* ДЗ 5 - Асинхронность и работа с сетью */
+/* ДЗ 6 - DOM Events */
 
 /*
  Задание 1:
 
- Функция должна возвращать Promise, который должен быть разрешен через указанное количество секунд
+ Функция должна добавлять обработчик fn события eventName к элементу target
 
  Пример:
-   delayPromise(3) // вернет promise, который будет разрешен через 3 секунды
+   addListener('click', document.querySelector('a'), () => console.log('...')) // должна добавить указанный обработчик кликов на указанный элемент
  */
-function delayPromise(seconds) {
-  const promise = new Promise(function (resolve) {
-    setTimeout(function () {
-      resolve();
-    }, seconds * 1000);
-  });
-  return promise;
+function addListener(eventName, target, fn) {
+  target.addEventListener(eventName, fn);
 }
 
 /*
  Задание 2:
 
- 2.1: Функция должна вернуть Promise, который должен быть разрешен с массивом городов в качестве значения
-
- Массив городов можно получить отправив асинхронный запрос по адресу
- https://raw.githubusercontent.com/smelukov/citiesTest/master/cities.json
-
- 2.2: Элементы полученного массива должны быть отсортированы по имени города
+ Функция должна удалять у элемента target обработчик fn события eventName
 
  Пример:
-   loadAndSortTowns().then(towns => console.log(towns)) // должна вывести в консоль отсортированный массив городов
+   removeListener('click', document.querySelector('a'), someHandler) // должна удалить указанный обработчик кликов на указанный элемент
  */
-function loadAndSortTowns() {
-  const townsLink =
-    'https://raw.githubusercontent.com/smelukov/citiesTest/master/cities.json';
-  return fetch(townsLink)
-    .then((receivedData) => receivedData.json())
-    .then((towns) => towns.sort((a, b) => a.name.localeCompare(b.name)));
+function removeListener(eventName, target, fn) {
+  target.removeEventListener(eventName, fn);
 }
 
-export { delayPromise, loadAndSortTowns };
+/*
+ Задание 3:
+
+ Функция должна добавить к элементу target такой обработчик на события eventName, чтобы он отменял действия по умолчанию
+
+ Пример:
+   skipDefault('click', document.querySelector('a')) // после вызова функции, клики на указанную ссылку не должны приводить к переходу на другую страницу
+ */
+function skipDefault(eventName, target) {
+  target.addEventListener(eventName, function (e) {
+    e.preventDefault();
+  });
+}
+
+/*
+ Задание 4:
+
+ Функция должна эмулировать событие click для элемента target
+
+ Пример:
+   emulateClick(document.querySelector('a')) // для указанного элемента должно быть симулировано события click
+ */
+function emulateClick(target) {
+  const evt = document.createEvent('MouseEvent');
+  evt.initMouseEvent('click');
+  target.dispatchEvent(evt);
+}
+
+/*
+ Задание 6:
+
+ Функция должна добавить такой обработчик кликов к элементу target,
+ который реагирует (вызывает fn) только на клики по элементам BUTTON внутри target
+
+ Пример:
+   delegate(document.body, () => console.log('кликнули на button')) // добавит такой обработчик кликов для body, который будет вызывать указанную функцию только если кликнули на кнопку (элемент с тегом button)
+ */
+function delegate(target, fn) {
+  target.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON') {
+      fn();
+    }
+  });
+}
+
+/*
+ Задание 7:
+
+ Функция должна добавить такой обработчик кликов к элементу target,
+ который сработает только один раз и удалится (перестанет срабатывать для последующих кликов по указанному элементу)
+
+ Пример:
+   once(document.querySelector('button'), () => console.log('обработчик выполнился!')) // добавит такой обработчик кликов для указанного элемента, который вызовется только один раз и затем удалится
+ */
+
+function once(target, fn) {
+  let clickedBtn = false;
+
+  target.addEventListener('click', () => {
+    if (clickedBtn === false) {
+      fn();
+      clickedBtn = true;
+    }
+  });
+}
+
+export { addListener, removeListener, skipDefault, emulateClick, delegate, once };

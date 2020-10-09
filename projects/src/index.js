@@ -1,122 +1,63 @@
+/* Задание со звездочкой */
+
 /*
- Страница должна предварительно загрузить список городов из
- https://raw.githubusercontent.com/smelukov/citiesTest/master/cities.json
- и отсортировать в алфавитном порядке.
-
- При вводе в текстовое поле, под ним должен появляться список тех городов,
- в названии которых, хотя бы частично, есть введенное значение.
- Регистр символов учитываться не должен, то есть "Moscow" и "moscow" - одинаковые названия.
-
- Во время загрузки городов, на странице должна быть надпись "Загрузка..."
- После окончания загрузки городов, надпись исчезает и появляется текстовое поле.
-
- Разметку смотрите в файле towns.html
-
+ Создайте страницу с кнопкой.
+ При нажатии на кнопку должен создаваться div со случайными размерами, цветом и позицией на экране
+ Необходимо предоставить возможность перетаскивать созданные div при помощи drag and drop
  Запрещено использовать сторонние библиотеки. Разрешено пользоваться только тем, что встроено в браузер
-
- *** Часть со звездочкой ***
- Если загрузка городов не удалась (например, отключился интернет или сервер вернул ошибку),
- то необходимо показать надпись "Не удалось загрузить города" и кнопку "Повторить".
- При клике на кнопку, процесс загрузки повторяется заново
  */
 
 /*
  homeworkContainer - это контейнер для всех ваших домашних заданий
- Если вы создаете новые html-элементы и добавляете их на страницу, то дабавляйте их только в этот контейнер
+ Если вы создаете новые html-элементы и добавляете их на страницу, то добавляйте их только в этот контейнер
 
  Пример:
    const newDiv = document.createElement('div');
    homeworkContainer.appendChild(newDiv);
  */
+import './dnd.html';
 
-import './towns.html';
+const homeworkContainer = document.querySelector('#app');
 
-const homeworkContainer = document.querySelector('#homework-container');
+let currentElem;
+let startPointX = 0;
+let startPointY = 0;
 
-/*
- Функция должна вернуть Promise, который должен быть разрешен с массивом городов в качестве значения
-
- Массив городов пожно получить отправив асинхронный запрос по адресу
- https://raw.githubusercontent.com/smelukov/citiesTest/master/cities.json
- */
-function loadAndSortTowns() {
-  return fetch('https://raw.githubusercontent.com/smelukov/citiesTest/master/cities.json')
-    .then((receivedData) => receivedData.json())
-    .then((cities) => cities.sort((a, b) => a.name.localeCompare(b.name)));
-}
-
-function loadTowns() {
-  return loadAndSortTowns();
-}
-
-/*
- Функция должна проверять встречается ли подстрока chunk в строке full
- Проверка должна происходить без учета регистра символов
-
- Пример:
-   isMatching('Moscow', 'moscow') // true
-   isMatching('Moscow', 'mosc') // true
-   isMatching('Moscow', 'cow') // true
-   isMatching('Moscow', 'SCO') // true
-   isMatching('Moscow', 'Moscov') // false
- */
-function isMatching(full, chunk) {
-  return full.toLowerCase().includes(chunk.toLowerCase());
-}
-
-/* Блок с надписью "Загрузка" */
-const loadingBlock = homeworkContainer.querySelector('#loading-block');
-/* Блок с надписью "Не удалось загрузить города" и кнопкой "Повторить" */
-const loadingFailedBlock = homeworkContainer.querySelector('#loading-failed');
-/* Кнопка "Повторить" */
-const retryButton = homeworkContainer.querySelector('#retry-button');
-/* Блок с текстовым полем и результатом поиска */
-const filterBlock = homeworkContainer.querySelector('#filter-block');
-/* Текстовое поле для поиска по городам */
-const filterInput = homeworkContainer.querySelector('#filter-input');
-/* Блок с результатами поиска */
-const filterResult = homeworkContainer.querySelector('#filter-result');
-
-let cities = [];
-
-retryButton.addEventListener('click', () => {
-  reloadTowns();
+document.addEventListener('mousemove', (e) => {
+  if (currentElem) {
+    currentElem.style.top = e.clientY - startPointY + 'px';
+    currentElem.style.left = e.clientX - startPointX + 'px';
+  }
 });
 
-filterInput.addEventListener('input', function () {
-  updateFilter(this.value);
+function randomNumber(start, finish) {
+  return parseInt(start + Math.random() * finish - start);
+}
+
+export function createDiv() {
+  const newDiv = document.createElement('div');
+  newDiv.classList.add('draggable-div');
+
+  newDiv.style.background = '#' + randomNumber(0, 0xffffff).toString(16);
+  newDiv.style.width = randomNumber(0, 500) + 'px';
+  newDiv.style.height = randomNumber(0, 500) + 'px';
+  newDiv.style.top = randomNumber(0, window.innerHeight) + 'px';
+  newDiv.style.left = randomNumber(0, window.innerWidth) + 'px';
+
+  newDiv.addEventListener('mousedown', (e) => {
+    currentElem = newDiv;
+    startPointX = e.offsetX;
+    startPointY = e.offsetY;
+  });
+
+  newDiv.addEventListener('mouseup', () => (currentElem = false));
+
+  return newDiv;
+}
+
+const addDivButton = homeworkContainer.querySelector('#addDiv');
+
+addDivButton.addEventListener('click', function () {
+  const newDiv = createDiv();
+  homeworkContainer.append(newDiv);
 });
-
-loadingFailedBlock.classList.add('hidden');
-filterBlock.classList.add('hidden');
-
-async function reloadTowns() {
-  try {
-    cities = await loadTowns();
-    loadingBlock.classList.add('hidden');
-    loadingFailedBlock.classList.add('hidden');
-    filterBlock.classList.remove('hidden');
-  } catch (error) {
-    loadingBlock.classList.add('hidden');
-    loadingFailedBlock.classList.remove('hidden');
-  }
-}
-
-function updateFilter(filterValue) {
-  filterResult.innerHTML = '';
-
-  const fragment = document.createDocumentFragment();
-
-  for (const city of cities) {
-    if (filterValue && isMatching(city.name, filterValue)) {
-      const createdDiv = document.createElement('div');
-      createdDiv.textContent = city.name;
-      fragment.append(createdDiv);
-    }
-  }
-  filterResult.append(fragment);
-}
-
-reloadTowns();
-
-export { loadTowns, isMatching };
