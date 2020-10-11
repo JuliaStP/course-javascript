@@ -1,63 +1,132 @@
-/* Задание со звездочкой */
-
 /*
- Создайте страницу с кнопкой.
- При нажатии на кнопку должен создаваться div со случайными размерами, цветом и позицией на экране
- Необходимо предоставить возможность перетаскивать созданные div при помощи drag and drop
+ ДЗ 7 - Создать редактор cookie с возможностью фильтрации
+
+ 7.1: На странице должна быть таблица со списком имеющихся cookie. Таблица должна иметь следующие столбцы:
+   - имя
+   - значение
+   - удалить (при нажатии на кнопку, выбранная cookie удаляется из браузера и таблицы)
+
+ 7.2: На странице должна быть форма для добавления новой cookie. Форма должна содержать следующие поля:
+   - имя
+   - значение
+   - добавить (при нажатии на кнопку, в браузер и таблицу добавляется новая cookie с указанным именем и значением)
+
+ Если добавляется cookie с именем уже существующей cookie, то ее значение в браузере и таблице должно быть обновлено
+
+ 7.3: На странице должно быть текстовое поле для фильтрации cookie
+ В таблице должны быть только те cookie, в имени или значении которых, хотя бы частично, есть введенное значение
+ Если в поле фильтра пусто, то должны выводиться все доступные cookie
+ Если добавляемая cookie не соответствует фильтру, то она должна быть добавлена только в браузер, но не в таблицу
+ Если добавляется cookie, с именем уже существующей cookie и ее новое значение не соответствует фильтру,
+ то ее значение должно быть обновлено в браузере, а из таблицы cookie должна быть удалена
+
  Запрещено использовать сторонние библиотеки. Разрешено пользоваться только тем, что встроено в браузер
  */
 
+import './cookie.html';
+
 /*
- homeworkContainer - это контейнер для всех ваших домашних заданий
+ app - это контейнер для всех ваших домашних заданий
  Если вы создаете новые html-элементы и добавляете их на страницу, то добавляйте их только в этот контейнер
 
  Пример:
    const newDiv = document.createElement('div');
    homeworkContainer.appendChild(newDiv);
  */
-import './dnd.html';
+const homeworkContainer = document.querySelector('#homework-container');
+// текстовое поле для фильтрации cookie
+const filterNameInput = homeworkContainer.querySelector('#filter-name-input');
+// текстовое поле с именем cookie
+const addNameInput = homeworkContainer.querySelector('#add-name-input');
+// текстовое поле со значением cookie
+const addValueInput = homeworkContainer.querySelector('#add-value-input');
+// кнопка "добавить cookie"
+const addButton = homeworkContainer.querySelector('#add-button');
+// таблица со списком cookie
+const listTable = homeworkContainer.querySelector('#list-table tbody');
 
-const homeworkContainer = document.querySelector('#app');
+const allCookies = getAllCookies();
+let filteredValue = '';
 
-let currentElem;
-let startPointX = 0;
-let startPointY = 0;
+reloadList();
 
-document.addEventListener('mousemove', (e) => {
-  if (currentElem) {
-    currentElem.style.top = e.clientY - startPointY + 'px';
-    currentElem.style.left = e.clientX - startPointX + 'px';
+function getAllCookies() {
+  return document.cookie
+    .split('; ')
+    .filter(Boolean)
+    .map((cookie) => cookie.match(/^([^=]+)=(.+)/))
+    .reduce((obj, [, name, value]) => {
+      obj.set(name, value);
+      return obj;
+    }, new Map());
+}
+
+filterNameInput.addEventListener('input', function () {
+  filteredValue = this.value;
+  reloadList();
+});
+
+addButton.addEventListener('click', () => {
+  const cookieName = encodeURIComponent(addNameInput.value.trim());
+  const cookieValue = encodeURIComponent(addValueInput.value.trim());
+
+  if (cookieName === false) {
+    return;
+  }
+
+  document.cookie = `${cookieName} = ${cookieValue}`;
+  allCookies.set(cookieName, cookieValue);
+
+  reloadList();
+});
+
+listTable.addEventListener('click', (e) => {
+  const { cookiesName, role } = e.target.dataset;
+
+  if (role === 'delete') {
+    allCookies.delete(cookiesName);
+    document.cookie = `${cookiesName}=deleted; max-age=0`;
+    reloadList();
   }
 });
 
-function randomNumber(start, finish) {
-  return parseInt(start + Math.random() * finish - start);
+function reloadList() {
+  const newFragment = document.createDocumentFragment();
+  let total = 0;
+
+  listTable.innerHTML = '';
+
+  for (const [name, value] of allCookies) {
+    if (
+      filteredValue &&
+      !name.toLowerCase().includes(filteredValue.toLowerCase()) &&
+      !value.toLowerCase().includes(filteredValue.toLowerCase())
+    ) {
+      continue;
+    }
+
+    total++;
+    const list = document.createElement('tr');
+    const nameCell = document.createElement('td');
+    const valueCell = document.createElement('td');
+    const deleteCell = document.createElement('td');
+    const deleteBtn = document.createElement('button');
+
+    deleteBtn.dataset.role = 'delete';
+    deleteBtn.dataset.cookiesName = name;
+    deleteBtn.textContent = 'Удалить';
+    nameCell.textContent = name;
+    valueCell.textContent = value;
+    valueCell.classList.add('value');
+    deleteCell.append(deleteBtn);
+    list.append(nameCell, valueCell, deleteCell);
+    newFragment.append(list);
+  }
+
+  if (total) {
+    listTable.parentNode.classList.remove('hidden');
+    listTable.append(newFragment);
+  } else {
+    listTable.parentNode.classList.add('hidden');
+  }
 }
-
-export function createDiv() {
-  const newDiv = document.createElement('div');
-  newDiv.classList.add('draggable-div');
-
-  newDiv.style.background = '#' + randomNumber(0, 0xffffff).toString(16);
-  newDiv.style.width = randomNumber(0, 500) + 'px';
-  newDiv.style.height = randomNumber(0, 500) + 'px';
-  newDiv.style.top = randomNumber(0, window.innerHeight) + 'px';
-  newDiv.style.left = randomNumber(0, window.innerWidth) + 'px';
-
-  newDiv.addEventListener('mousedown', (e) => {
-    currentElem = newDiv;
-    startPointX = e.offsetX;
-    startPointY = e.offsetY;
-  });
-
-  newDiv.addEventListener('mouseup', () => (currentElem = false));
-
-  return newDiv;
-}
-
-const addDivButton = homeworkContainer.querySelector('#addDiv');
-
-addDivButton.addEventListener('click', function () {
-  const newDiv = createDiv();
-  homeworkContainer.append(newDiv);
-});
